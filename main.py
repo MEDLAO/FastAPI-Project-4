@@ -10,18 +10,18 @@ app = FastAPI()
 RAPIDAPI_SECRET = os.getenv("RAPIDAPI_SECRET")
 
 
-@app.middleware("http")
-async def enforce_rapidapi_usage(request: Request, call_next):
-    # Bypass authentication for the /welcome endpoint
-    if request.url.path == "/":
-        return await call_next(request)
-
-    rapidapi_proxy_secret = request.headers.get("X-RapidAPI-Proxy-Secret")
-
-    if rapidapi_proxy_secret != RAPIDAPI_SECRET:
-        return JSONResponse(status_code=403, content={"error": "Access restricted to RapidAPI users only."})
-
-    return await call_next(request)
+# @app.middleware("http")
+# async def enforce_rapidapi_usage(request: Request, call_next):
+#     # Allow "/" and "/health" to work without the header
+#     if request.url.path in ["/", "/health"]:
+#         return await call_next(request)
+#
+#     rapidapi_proxy_secret = request.headers.get("X-RapidAPI-Proxy-Secret")
+#
+#     if rapidapi_proxy_secret != RAPIDAPI_SECRET:
+#         return JSONResponse(status_code=403, content={"error": "Access restricted to RapidAPI users only."})
+#
+#     return await call_next(request)
 
 
 @app.get("/health")
