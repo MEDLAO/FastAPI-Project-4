@@ -56,21 +56,24 @@ class TextInput(BaseModel):
 
 @app.post("/detect-language/")
 async def detect_language(input_data: TextInput):
-    """
-    Language Detection API
-
-    - Supports 75 languages.
-    - Returns detected language and confidence scores.
-    """
     try:
+        if not input_data.text:
+            raise HTTPException(status_code=400, detail="Missing or empty 'text' field.")
+
         raw_text = input_data.text.strip()
 
-        # Detect primary language
+        if len(raw_text) < 3:
+            raise HTTPException(status_code=400, detail="Text too short for detection.")
+
         detected_lang = detector.detect_language_of(raw_text)
 
-        # Get confidence scores (FIXED: Correctly extract values)
+        if detected_lang is None:
+            raise HTTPException(status_code=400, detail="Could not detect language.")
+
         confidence_scores = detector.compute_language_confidence_values(raw_text)
-        confidence_dict = {str(confidence.language): confidence.value for confidence in confidence_scores}
+        confidence_dict = {
+            str(conf.language): conf.value for conf in confidence_scores
+        }
 
         return {
             "detected_language": str(detected_lang),
@@ -78,4 +81,4 @@ async def detect_language(input_data: TextInput):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error detecting language: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
