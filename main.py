@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from lingua import LanguageDetectorBuilder
+from langdetect import detect, detect_langs
 import os
 
 
@@ -46,10 +46,6 @@ def read_root():
     return {"message": welcome_message}
 
 
-# Build detector for all available languages
-detector = LanguageDetectorBuilder.from_all_languages().build()
-
-
 class TextInput(BaseModel):
     text: str  # Accepts raw multi-line text
 
@@ -57,7 +53,7 @@ class TextInput(BaseModel):
 @app.post("/detect-language/")
 async def detect_language(input_data: TextInput):
     try:
-        if not input_data.text:
+        if not input_data.text or not input_data.text.strip():
             raise HTTPException(status_code=400, detail="Missing or empty 'text' field.")
 
         raw_text = input_data.text.strip()
@@ -65,20 +61,17 @@ async def detect_language(input_data: TextInput):
         if len(raw_text) < 3:
             raise HTTPException(status_code=400, detail="Text too short for detection.")
 
-        detected_lang = detector.detect_language_of(raw_text)
+        # Detect the primary language (e.g., 'fr')
+        primary_language = detect(raw_text)
 
-        if detected_lang is None:
-            raise HTTPException(status_code=400, detail="Could not detect language.")
-
-        confidence_scores = detector.compute_language_confidence_values(raw_text)
-        confidence_dict = {
-            str(conf.language): conf.value for conf in confidence_scores
-        }
+        # Get language probabilities (e.g., [fr:0.99999])
+        confidence_list = detect_langs(raw_text)
+        confidence_dict = {str(lang.lang): lang.prob for lang in confidence_list}
 
         return {
-            "detected_language": str(detected_lang),
+            "detected_language": primary_language,
             "confidence": confidence_dict
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Language detection failed: {str(e)}")
