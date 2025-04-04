@@ -50,25 +50,53 @@ class TextInput(BaseModel):
     text: str  # Accepts raw multi-line text
 
 
+# @app.post("/detect-language/")
+# async def detect_language(input_data: TextInput):
+#     try:
+#         if not input_data.text or not input_data.text.strip():
+#             raise HTTPException(status_code=400, detail="Missing or empty 'text' field.")
+#
+#         raw_text = input_data.text.strip()
+#
+#         if len(raw_text) < 3:
+#             raise HTTPException(status_code=400, detail="Text too short for detection.")
+#
+#         # Detect the primary language (e.g., 'fr')
+#         primary_language = detect(raw_text)
+#
+#         # Get language probabilities (e.g., [fr:0.99999])
+#         confidence_list = detect_langs(raw_text)
+#         confidence_dict = {str(lang.lang): lang.prob for lang in confidence_list}
+#
+#         return {
+#             "detected_language": primary_language,
+#             "confidence": confidence_dict
+#         }
+#
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Language detection failed: {str(e)}")
+
 @app.post("/detect-language/")
 async def detect_language(input_data: TextInput):
     try:
         if not input_data.text or not input_data.text.strip():
             raise HTTPException(status_code=400, detail="Missing or empty 'text' field.")
 
-        # Strip leading/trailing whitespace first
         raw_text = input_data.text.strip()
 
-        # Clean line breaks and carriage returns
-        raw_text = raw_text.replace("\n", " ").replace("\r", " ")
+        # Convert escaped line breaks (\\n, \\r) to spaces
+        raw_text = raw_text.replace("\\n", " ").replace("\\r", " ")
+
+        # Optional: collapse multiple spaces
+        raw_text = " ".join(raw_text.split())
 
         if len(raw_text) < 3:
             raise HTTPException(status_code=400, detail="Text too short for detection.")
 
-        # Detect the primary language (e.g., 'fr')
+        # Detect the primary language
         primary_language = detect(raw_text)
 
-        # Get language probabilities (e.g., [fr:0.99999])
+        # Get language probabilities
         confidence_list = detect_langs(raw_text)
         confidence_dict = {str(lang.lang): lang.prob for lang in confidence_list}
 
