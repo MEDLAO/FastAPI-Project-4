@@ -56,7 +56,11 @@ async def detect_language(input_data: TextInput):
         if not input_data.text or not input_data.text.strip():
             raise HTTPException(status_code=400, detail="Missing or empty 'text' field.")
 
+        # Strip leading/trailing whitespace first
         raw_text = input_data.text.strip()
+
+        # Clean line breaks and carriage returns
+        raw_text = raw_text.replace("\n", " ").replace("\r", " ")
 
         if len(raw_text) < 3:
             raise HTTPException(status_code=400, detail="Text too short for detection.")
