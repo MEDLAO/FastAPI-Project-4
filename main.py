@@ -50,22 +50,51 @@ class TextInput(BaseModel):
     text: str  # Accepts raw multi-line text
 
 
-@app.post("/detect-language/")
-async def detect_language(input_data: TextInput):
-    try:
-        if not input_data.text or not input_data.text.strip():
-            raise HTTPException(status_code=400, detail="Missing or empty 'text' field.")
+# @app.post("/detect-language/")
+# async def detect_language(input_data: TextInput):
+#     try:
+#         if not input_data.text or not input_data.text.strip():
+#             raise HTTPException(status_code=400, detail="Missing or empty 'text' field.")
+#
+#         raw_text = input_data.text.strip()
+#
+#         if len(raw_text) < 3:
+#             raise HTTPException(status_code=400, detail="Text too short for detection.")
+#
+#         # Detect the primary language (e.g., 'fr')
+#         primary_language = detect(raw_text)
+#
+#         # Get language probabilities (e.g., [fr:0.99999])
+#         confidence_list = detect_langs(raw_text)
+#         confidence_dict = {str(lang.lang): lang.prob for lang in confidence_list}
+#
+#         return {
+#             "detected_language": primary_language,
+#             "confidence": confidence_dict
+#         }
+#
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Language detection failed: {str(e)}")
 
-        raw_text = input_data.text.strip()
+
+@app.post("/detect-language/")
+async def detect_language(request: Request):
+    try:
+        # Read raw plain text body
+        raw_text = await request.body()
+        raw_text = raw_text.decode("utf-8").strip()
+
+        if not raw_text:
+            raise HTTPException(status_code=400, detail="Missing or empty input.")
 
         if len(raw_text) < 3:
             raise HTTPException(status_code=400, detail="Text too short for detection.")
 
-        # Detect the primary language (e.g., 'fr')
-        primary_language = detect(raw_text)
+        # Optional: Clean extra whitespace or line breaks
+        clean_text = " ".join(raw_text.replace("\r", "").split())
 
-        # Get language probabilities (e.g., [fr:0.99999])
-        confidence_list = detect_langs(raw_text)
+        primary_language = detect(clean_text)
+        confidence_list = detect_langs(clean_text)
         confidence_dict = {str(lang.lang): lang.prob for lang in confidence_list}
 
         return {
@@ -75,4 +104,3 @@ async def detect_language(input_data: TextInput):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Language detection failed: {str(e)}")
-
